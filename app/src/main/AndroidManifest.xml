@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ===== PERMISSIONS ===== -->
+    <!-- Location: needed for GPS coords when an incident occurs -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Foreground service location type (Android 10+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- SMS for emergency alerts (runtime permission required) -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+
+    <!-- Notifications (Android 13+ requires runtime permission) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Receive boot completed to restart the surveillance service -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Internet for Retrofit sync -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Network state for WorkManager constraints -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- ===== CUSTOM PERMISSION — protects our ContentProvider ===== -->
+    <!--
+        protectionLevel="signature": only apps signed with our certificate can
+        read emergency contacts. This prevents rogue apps from querying our data.
+        "signature|privileged" would also allow system privileged apps.
+    -->
+    <permission
+        android:name="com.guardian.track.READ_EMERGENCY_CONTACTS"
+        android:protectionLevel="signature" />
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
+    <application
+        android:name=".GuardianApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="GuardianTrack"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.GuardianTrack">
+
+        <!-- ===== MAIN ACTIVITY — single-activity architecture ===== -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ===== FOREGROUND SERVICE ===== -->
+        <!--
+            foregroundServiceType="location": required on Android 10+ to access
+            location in a foreground service.
+        -->
+        <service
+            android:name=".service.SurveillanceService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <!-- ===== BROADCAST RECEIVERS ===== -->
+
+        <!-- Battery low: registered in manifest so it fires even when app is killed -->
+        <receiver
+            android:name=".receiver.BatteryReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.ACTION_BATTERY_LOW" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Boot completed: restarts surveillance after phone reboot -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:exported="true"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Needed on some devices for locked-storage boot -->
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ===== CONTENT PROVIDER ===== -->
+        <!--
+            Exposes emergency contacts to other apps with the READ_EMERGENCY_CONTACTS
+            permission. readPermission restricts queries; writePermission is not
+            declared so external apps can never modify our contacts.
+        -->
+        <provider
+            android:name=".provider.EmergencyContactProvider"
+            android:authorities="com.guardian.track.provider"
+            android:exported="true"
+            android:readPermission="com.guardian.track.READ_EMERGENCY_CONTACTS" />
+
+    </application>
+</manifest>
