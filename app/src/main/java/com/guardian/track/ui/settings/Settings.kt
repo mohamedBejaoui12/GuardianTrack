@@ -13,13 +13,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -54,7 +56,10 @@ import androidx.lifecycle.viewModelScope
 import com.guardian.track.data.local.PreferencesManager
 import com.guardian.track.util.SecureStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -71,7 +76,7 @@ class SettingsViewModel @Inject constructor(
     private val secureStorage: SecureStorage
 ) : ViewModel() {
 
-        val uiState: StateFlow<SettingsUiState> = combine(
+    val uiState: StateFlow<SettingsUiState> = combine(
         prefsManager.fallThreshold,
         prefsManager.darkMode,
         prefsManager.smsSimulationMode,
@@ -88,8 +93,6 @@ class SettingsViewModel @Inject constructor(
     fun setFallThreshold(value: Float) {
         viewModelScope.launch { prefsManager.setFallThreshold(value) }
     }
-
-
 
     fun setSmsSimulationMode(enabled: Boolean) {
         viewModelScope.launch { prefsManager.setSmsSimulationMode(enabled) }
@@ -144,6 +147,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -318,24 +322,75 @@ private fun ProfileCard() {
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "Profile",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(text = "Name: Mohamed Bejaoui", color = Color(0xFF3E4961), fontSize = 14.sp)
-            Text(text = "Email: bejaouimohamed@gmail.com", color = Color(0xFF3E4961), fontSize = 14.sp)
-            Text(text = "Birth Date: 11/04/2003", color = Color(0xFF3E4961), fontSize = 14.sp)
-            Text(text = "Gender: Male", color = Color(0xFF3E4961), fontSize = 14.sp)
-            Text(
-                text = "Fake profile for simulation only.",
-                color = Color(0xFF6A7388),
-                fontSize = 12.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(58.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(0xFFFF8B5E), Color(0xFFE85D8B), Color(0xFF6D7CFF))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "MB",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "Profile",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "Personal Information",
+                        color = Color(0xFF6A7388),
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            ProfileInfoField(label = "Full Name", value = "Mohamed Bejaoui")
+            ProfileInfoField(label = "Email", value = "bejaouimohamed@gmail.com")
+            ProfileInfoField(label = "Birth Date", value = "11/04/2003")
+            ProfileInfoField(label = "Gender", value = "Male")
         }
     }
+}
+
+@Composable
+private fun ProfileInfoField(label: String, value: String) {
+    TextField(
+        value = value,
+        onValueChange = {},
+        readOnly = true,
+        singleLine = true,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFF5F8FF),
+            unfocusedContainerColor = Color(0xFFF5F8FF),
+            disabledContainerColor = Color(0xFFF5F8FF),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            focusedTextColor = Color(0xFF344054),
+            unfocusedTextColor = Color(0xFF344054)
+        )
+    )
 }
 
 @Composable
@@ -380,8 +435,7 @@ private fun SettingsHeader() {
                     )
                 )
                 .padding(18.dp)
-        )
-        {
+        ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
                     text = "Preferences",
