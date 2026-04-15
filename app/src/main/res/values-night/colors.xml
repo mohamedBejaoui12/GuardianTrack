@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark mode overrides -->
+    <!-- [Palette] Dark mode overrides -->
     <color name="guardian_blue_500">#FF42A5F5</color>
     <color name="guardian_blue_700">#FF1565C0</color>
     <color name="guardian_blue_900">#FF0A2A5E</color>

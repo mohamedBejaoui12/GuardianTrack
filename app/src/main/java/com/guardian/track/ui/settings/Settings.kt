@@ -1,5 +1,7 @@
 package com.guardian.track.ui.settings
 
+// [Summary] Structured and concise implementation file.
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -56,20 +58,12 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// ─────────────────────────────────────────────
-//  UI State
-// ─────────────────────────────────────────────
-
 data class SettingsUiState(
     val fallThreshold: Float = 15.0f,
     val darkMode: Boolean = false,
-    val smsSimulationMode: Boolean = true,  // DEFAULT ON — spec requirement
+    val smsSimulationMode: Boolean = true,
     val emergencyNumber: String = ""
 )
-
-// ─────────────────────────────────────────────
-//  ViewModel
-// ─────────────────────────────────────────────
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -77,11 +71,7 @@ class SettingsViewModel @Inject constructor(
     private val secureStorage: SecureStorage
 ) : ViewModel() {
 
-    /**
-     * Combines multiple DataStore Flows into one UI state using combine().
-     * Any time one of the four preferences changes, a new SettingsUiState is emitted.
-     */
-    val uiState: StateFlow<SettingsUiState> = combine(
+        val uiState: StateFlow<SettingsUiState> = combine(
         prefsManager.fallThreshold,
         prefsManager.darkMode,
         prefsManager.smsSimulationMode,
@@ -108,7 +98,6 @@ class SettingsViewModel @Inject constructor(
     fun setEmergencyNumber(number: String) {
         viewModelScope.launch {
             prefsManager.setEmergencyNumber(number)
-            // Also save encrypted copy
             secureStorage.saveEmergencyNumber(number)
         }
     }
@@ -159,6 +148,8 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 SettingsHeader()
+
+                ProfileCard()
 
                 Card(
                     shape = RoundedCornerShape(20.dp),
@@ -313,6 +304,36 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ProfileCard() {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Profile",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(text = "Name: Mohamed Bejaoui", color = Color(0xFF3E4961), fontSize = 14.sp)
+            Text(text = "Email: bejaouimohamed@gmail.com", color = Color(0xFF3E4961), fontSize = 14.sp)
+            Text(text = "Birth Date: 11/04/2003", color = Color(0xFF3E4961), fontSize = 14.sp)
+            Text(text = "Gender: Male", color = Color(0xFF3E4961), fontSize = 14.sp)
+            Text(
+                text = "Fake profile for simulation only.",
+                color = Color(0xFF6A7388),
+                fontSize = 12.sp
+            )
         }
     }
 }

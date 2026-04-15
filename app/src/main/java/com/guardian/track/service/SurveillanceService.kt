@@ -1,9 +1,11 @@
 package com.guardian.track.service
 
+// [Summary] Structured and concise implementation file.
+
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo         // NEW: for FOREGROUND_SERVICE_TYPE_*
+import android.content.pm.ServiceInfo
 import android.hardware.*
 import android.os.*
 import android.util.Log
@@ -23,24 +25,6 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import kotlin.math.sqrt
 
-/**
- * SurveillanceService — Foreground Service
- *
- * A Foreground Service keeps running even when the user navigates away.
- * It MUST show a persistent notification — this is Android's way of telling
- * the user "this app is actively running in the background."
- *
- * Fall detection algorithm (two-phase):
- *   Phase 1 (Free-fall): magnitude < 3 m/s² for > 100ms   → device is falling
- *   Phase 2 (Impact):    magnitude > threshold within 200ms → device hit the ground
- *
- * Sensor callbacks fire on a HandlerThread (background thread) to avoid
- * blocking the main thread. We then switch to the main dispatcher for UI updates.
- *
- * foregroundServiceType must be declared explicitly on Android 14+ (API 34+):
- *   - FOREGROUND_SERVICE_TYPE_LOCATION : access GPS in background
- *   - FOREGROUND_SERVICE_TYPE_HEALTH   : use high-rate sensors (accelerometer)
- */
 @AndroidEntryPoint
 class SurveillanceService : Service() {
 
@@ -85,10 +69,6 @@ class SurveillanceService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-
-        // On Android 14+ (API 34) we MUST pass the foreground service type(s)
-        // explicitly. Using the 3-arg overload prevents the SecurityException
-        // that targetSdk 36 throws when the type is inferred incorrectly.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
                 NOTIFICATION_ID,
@@ -101,7 +81,6 @@ class SurveillanceService : Service() {
         }
 
         serviceScope.launch {
-            // Keep threshold in sync while service is alive so Settings changes apply immediately.
             preferencesManager.fallThreshold.collectLatest { latestThreshold ->
                 fallThreshold = latestThreshold
                 Log.d(TAG, "Updated fall threshold=$fallThreshold")
@@ -111,11 +90,7 @@ class SurveillanceService : Service() {
         setupAccelerometer()
     }
 
-    /**
-     * Sets up a dedicated HandlerThread for sensor events.
-     * Prevents sensor callbacks from competing with the UI thread.
-     */
-    private fun setupAccelerometer() {
+        private fun setupAccelerometer() {
         sensorThread = HandlerThread("SensorThread").apply { start() }
         sensorHandler = Handler(sensorThread.looper)
 
@@ -132,10 +107,7 @@ class SurveillanceService : Service() {
         } ?: Log.w(TAG, "No accelerometer found on device")
     }
 
-    /**
-     * SensorEventListener — runs on sensorThread, NOT the main thread.
-     */
-    private val sensorEventListener = object : SensorEventListener {
+        private val sensorEventListener = object : SensorEventListener {
 
         override fun onSensorChanged(event: SensorEvent) {
             val ax = event.values[0]
@@ -151,7 +123,6 @@ class SurveillanceService : Service() {
                     freeFallStartTime = now
                 }
                 magnitude < FREEFALL_MAGNITUDE && inFreeFall -> {
-                    // If this low-g phase lasts too long, reset and wait for a fresh sequence.
                     if (now - freeFallStartTime > (FREEFALL_DURATION_MS + IMPACT_WINDOW_MS)) {
                         inFreeFall = false
                     }
@@ -161,7 +132,6 @@ class SurveillanceService : Service() {
                     val freeFallDuration = now - freeFallStartTime
 
                     when {
-                        // Expected sequence: sustained free-fall, then impact over threshold.
                         magnitude > fallThreshold &&
                             freeFallDuration >= FREEFALL_DURATION_MS &&
                             freeFallDuration <= (FREEFALL_DURATION_MS + IMPACT_WINDOW_MS) -> {
@@ -171,18 +141,12 @@ class SurveillanceService : Service() {
                                 onFallDetected()
                             }
                         }
-
-                        // Free-fall was too brief; likely movement noise.
                         magnitude > FREEFALL_MAGNITUDE && freeFallDuration < FREEFALL_DURATION_MS -> {
                             inFreeFall = false
                         }
-
-                        // Impact window expired without strong hit.
                         freeFallDuration > (FREEFALL_DURATION_MS + IMPACT_WINDOW_MS) -> {
                             inFreeFall = false
                         }
-
-                        // Keep waiting briefly for a possible impact.
                         else -> Unit
                     }
                 }
@@ -198,11 +162,7 @@ class SurveillanceService : Service() {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
     }
 
-    /**
-     * Called when a fall is confirmed.
-     * Switches to IO dispatcher for network/DB work.
-     */
-    private fun onFallDetected() {
+        private fun onFallDetected() {
         Log.i(TAG, "FALL DETECTED")
         serviceScope.launch(Dispatchers.IO) {
             val (lat, lon) = getLastLocation()
@@ -220,11 +180,7 @@ class SurveillanceService : Service() {
         }
     }
 
-    /**
-     * Gets last known GPS location.
-     * Returns 0.0 / 0.0 if permission denied or location unavailable.
-     */
-    @Suppress("MissingPermission")
+        @Suppress("MissingPermission")
     private suspend fun getLastLocation(): Pair<Double, Double> =
         try {
             val loc = fusedLocation.lastLocation.await()
@@ -245,8 +201,6 @@ class SurveillanceService : Service() {
         sensorThread.quitSafely()
         serviceScope.cancel()
     }
-
-    // ===== Notification helpers =====
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(

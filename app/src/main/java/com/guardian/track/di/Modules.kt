@@ -1,5 +1,7 @@
 package com.guardian.track.di
 
+// [Summary] Structured and concise implementation file.
+
 import android.content.Context
 import androidx.room.Room
 import androidx.work.WorkManager
@@ -21,12 +23,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
-/**
- * DatabaseModule — provides Room singleton.
- *
- * @InstallIn(SingletonComponent) means these bindings live as long as the app.
- * Hilt will automatically inject AppDatabase wherever it's declared as a parameter.
- */
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
@@ -35,7 +31,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext ctx: Context): AppDatabase =
         Room.databaseBuilder(ctx, AppDatabase::class.java, "guardian_db")
-            .fallbackToDestructiveMigration()  // for dev — use proper Migration in production
+            .fallbackToDestructiveMigration()
             .build()
 
     @Provides
@@ -45,12 +41,6 @@ object DatabaseModule {
     fun provideContactDao(db: AppDatabase): EmergencyContactDao = db.emergencyContactDao()
 }
 
-/**
- * NetworkModule — provides Retrofit singleton.
- *
- * The API base URL comes from BuildConfig, which reads local.properties.
- * The logging interceptor prints HTTP traffic to Logcat in debug builds.
- */
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -81,9 +71,6 @@ object NetworkModule {
         retrofit.create(GuardianApi::class.java)
 }
 
-/**
- * AppModule — provides miscellaneous singletons that don't fit the other modules.
- */
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
@@ -93,11 +80,7 @@ object AppModule {
     fun provideWorkManager(@ApplicationContext ctx: Context): WorkManager =
         WorkManager.getInstance(ctx)
 
-    /**
-     * FusedLocationProviderClient is the recommended way to get GPS on Android.
-     * It automatically selects the most accurate/power-efficient provider.
-     */
-    @Provides
+        @Provides
     @Singleton
     fun provideFusedLocation(@ApplicationContext ctx: Context): FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(ctx)

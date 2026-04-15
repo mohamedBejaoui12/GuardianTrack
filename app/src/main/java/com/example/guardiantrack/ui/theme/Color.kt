@@ -1,5 +1,7 @@
 package com.example.guardiantrack.ui.theme
 
+// [Summary] Structured and concise implementation file.
+
 import androidx.compose.ui.graphics.Color
 
 val Purple80 = Color(0xFFD0BCFF)

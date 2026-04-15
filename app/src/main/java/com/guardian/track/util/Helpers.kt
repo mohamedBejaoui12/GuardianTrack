@@ -1,5 +1,7 @@
 package com.guardian.track.util
 
+// [Summary] Structured and concise implementation file.
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -12,11 +14,6 @@ import com.guardian.track.R
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Centralizes all notification logic.
- * Using object (singleton) here because it's stateless and called from
- * places like BroadcastReceiver that don't have Hilt injection.
- */
 object NotificationHelper {
 
     private const val INCIDENT_CHANNEL_ID = "emergency_detector_incidents"
@@ -24,8 +21,6 @@ object NotificationHelper {
 
     fun showIncidentNotification(context: Context, title: String, message: String) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        // Create channel if needed (idempotent — safe to call multiple times)
         val channel = NotificationChannel(
             INCIDENT_CHANNEL_ID,
             "Incident Alerts",
@@ -34,7 +29,6 @@ object NotificationHelper {
             description = "Urgent safety alerts from Emergency Detector"
             enableVibration(true)
             vibrationPattern = longArrayOf(0, 300, 200, 300, 200, 300)
-            // Set default alarm sound as ringtone for high-urgency alerts
             val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                     ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val audioAttrs = AudioAttributes.Builder()
@@ -64,16 +58,6 @@ object NotificationHelper {
     }
 }
 
-/**
- * Handles emergency SMS sending.
- *
- * SIMULATION MODE (default ON):
- *   Logs the SMS to console and shows a notification instead of actually sending.
- *   This prevents accidental SMS in academic/testing environments.
- *
- * REAL MODE:
- *   Uses SmsManager.sendTextMessage(). Requires SEND_SMS permission granted at runtime.
- */
 @Singleton
 class SmsHelper @Inject constructor() {
 
@@ -91,7 +75,6 @@ class SmsHelper @Inject constructor() {
         val message = buildMessage(incidentType)
 
         if (simulationMode) {
-            // SIMULATION: log + notification, no real SMS
             Log.i(TAG, "📱 [SIMULATION] SMS to $phoneNumber: $message")
             NotificationHelper.showIncidentNotification(
                 context,
@@ -100,8 +83,6 @@ class SmsHelper @Inject constructor() {
             )
             return
         }
-
-        // REAL SMS — only executes if user explicitly disabled simulation mode
         if (phoneNumber.isBlank()) {
             Log.w(TAG, "No emergency number configured — SMS not sent")
             return
@@ -110,7 +91,6 @@ class SmsHelper @Inject constructor() {
         try {
             @Suppress("DEPRECATION")
             val smsManager = SmsManager.getDefault()
-            // splitMessage handles messages > 160 chars automatically
             val parts = smsManager.divideMessage(message)
             smsManager.sendMultipartTextMessage(phoneNumber, null, parts, null, null)
             Log.i(TAG, "SMS sent to $phoneNumber")

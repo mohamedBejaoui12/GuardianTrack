@@ -1,5 +1,7 @@
 package com.example.guardiantrack
 
+// [Summary] Structured and concise implementation file.
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent

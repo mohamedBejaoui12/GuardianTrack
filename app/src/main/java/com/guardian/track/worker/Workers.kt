@@ -1,5 +1,7 @@
 package com.guardian.track.worker
 
+// [Summary] Structured and concise implementation file.
+
 import android.content.Context
 import android.util.Log
 import androidx.hilt.work.HiltWorker
@@ -15,15 +17,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 
-/**
- * SyncWorker — runs when network becomes available to upload pending incidents.
- *
- * @HiltWorker: Hilt needs special treatment for Workers because WorkManager
- * creates them — not Hilt. @HiltWorker + @AssistedInject is the official pattern.
- *
- * WorkManager guarantees this runs even if the app is killed, as long as
- * the network constraint is eventually satisfied.
- */
 @HiltWorker
 class SyncWorker @AssistedInject constructor(
     @Assisted context: Context,
@@ -52,11 +45,9 @@ class SyncWorker @AssistedInject constructor(
             if (allSuccess) Result.success() else Result.retry()
         } catch (e: Exception) {
             Log.e("SyncWorker", "Sync error: ${e.message}")
-            Result.retry()  // WorkManager will try again later
+            Result.retry()
         }
     }
-
-    // Required for WorkManager to report expedited work's foreground info
     override suspend fun getForegroundInfo(): ForegroundInfo =
         ForegroundInfo(2, createNotification())
 
@@ -67,10 +58,6 @@ class SyncWorker @AssistedInject constructor(
             .build()
 }
 
-/**
- * BatteryCriticalWorker — saves a BATTERY incident to Room.
- * Called by BatteryReceiver which cannot access Room directly.
- */
 @HiltWorker
 class BatteryCriticalWorker @AssistedInject constructor(
     @Assisted context: Context,
@@ -97,13 +84,6 @@ class BatteryCriticalWorker @AssistedInject constructor(
             .build()
 }
 
-/**
- * BootSurveillanceWorker — restarts the SurveillanceService after device boot.
- *
- * This is the Android 12+ compliant solution. We cannot start a foreground
- * service from a BroadcastReceiver on API 31+. WorkManager handles the
- * platform restrictions and starts the service when conditions are met.
- */
 @HiltWorker
 class BootSurveillanceWorker @AssistedInject constructor(
     @Assisted context: Context,

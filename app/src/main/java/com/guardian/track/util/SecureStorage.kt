@@ -1,5 +1,7 @@
 package com.guardian.track.util
 
+// [Summary] Structured and concise implementation file.
+
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -20,8 +22,6 @@ class SecureStorage @Inject constructor(
     private fun createEncryptedPrefs() = try {
         openEncryptedPrefs()
     } catch (e: Exception) {
-        // The Keystore key was lost (reinstall, restore from backup, OS update, etc.)
-        // The encrypted file is now unreadable - wipe it and start fresh.
         context.deleteSharedPreferences("emergency_detector_secure_prefs")
         try {
             val ks = java.security.KeyStore.getInstance("AndroidKeyStore").also { it.load(null) }

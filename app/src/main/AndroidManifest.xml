@@ -2,43 +2,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- ===== PERMISSIONS ===== -->
-    <!-- Location -->
+    <!-- [Permissions] -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- Foreground service base permission -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
-    <!-- Foreground service type: location (Android 10+) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-
-    <!-- Foreground service type: health (required on targetSdk 36) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
-
-    <!-- At least one of these is required alongside FOREGROUND_SERVICE_HEALTH -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
-
-    <!-- SMS for emergency alerts -->
     <uses-permission android:name="android.permission.SEND_SMS" />
-
-    <!-- Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- Vibrate for incident alerts -->
     <uses-permission android:name="android.permission.VIBRATE" />
-
-    <!-- Boot restart -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
-    <!-- Internet for Retrofit sync -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Network state for WorkManager -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!-- Custom permission protecting ContentProvider -->
     <permission
         android:name="com.guardian.track.READ_EMERGENCY_CONTACTS"
         android:protectionLevel="signature" />
@@ -55,7 +32,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GuardianTrack">
 
-        <!-- Remove only WorkManager's auto initializer; keep other App Startup initializers. -->
+        <!-- [Startup] Keep App Startup; remove WorkManager default initializer. -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
@@ -67,7 +44,6 @@
                 tools:node="remove" />
         </provider>
 
-        <!-- Main Activity -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">
@@ -77,16 +53,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Foreground Service -->
-        <!-- foregroundServiceType="location|health":                          -->
-        <!--   location = GPS access in background (Android 10+)              -->
-        <!--   health   = high-rate sensor (accelerometer) access (Android 14+) -->
         <service
             android:name=".service.SurveillanceService"
             android:exported="false"
             android:foregroundServiceType="location|health" />
 
-        <!-- Battery low receiver -->
         <receiver
             android:name=".receiver.BatteryReceiver"
             android:exported="false">
@@ -95,7 +66,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- Boot completed receiver -->
         <receiver
             android:name=".receiver.BootReceiver"
             android:exported="true"
@@ -106,7 +76,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- Content Provider -->
         <provider
             android:name=".provider.EmergencyContactProvider"
             android:authorities="com.guardian.track.provider"

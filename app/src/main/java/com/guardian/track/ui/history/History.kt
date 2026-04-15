@@ -1,5 +1,7 @@
 package com.guardian.track.ui.history
 
+// [Summary] Structured and concise implementation file.
+
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -59,22 +61,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// ─────────────────────────────────────────────
-//  ViewModel
-// ─────────────────────────────────────────────
-
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val incidentRepository: IncidentRepository
 ) : ViewModel() {
 
-    /**
-     * stateIn converts a cold Flow into a hot StateFlow.
-     * SharingStarted.WhileSubscribed(5000): keeps the upstream Flow active for 5s
-     * after the last subscriber disappears (e.g. during rotation) to avoid
-     * restarting the Room query on every rotation.
-     */
-    val incidents = incidentRepository.getAllIncidents()
+        val incidents = incidentRepository.getAllIncidents()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun deleteIncident(id: Long) {

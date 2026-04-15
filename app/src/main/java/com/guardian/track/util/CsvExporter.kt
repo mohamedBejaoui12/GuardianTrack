@@ -1,5 +1,7 @@
 package com.guardian.track.util
 
+// [Summary] Structured and concise implementation file.
+
 import android.content.ContentValues
 import android.content.Context
 import android.os.Environment
@@ -9,14 +11,6 @@ import com.guardian.track.model.toFormattedDate
 import com.guardian.track.model.toFormattedTime
 import java.io.IOException
 
-/**
- * Exports incident history to a CSV file in the public Documents folder.
- *
- * Uses MediaStore (Scoped Storage API) — required on Android 10+.
- * The file can be found in: Documents/emergency_detector_incidents_<timestamp>.csv
- *
- * The file can be found in: Documents/guardian_incidents_<timestamp>.csv
- */
 object CsvExporter {
         val fileName = "emergency_detector_incidents_${System.currentTimeMillis()}.csv"
     fun export(context: Context, incidents: List<IncidentEntity>): Boolean {
@@ -35,11 +29,7 @@ object CsvExporter {
 
             resolver.openOutputStream(uri)?.use { stream ->
                 val writer = stream.bufferedWriter()
-
-                // Header row
                 writer.write("Date,Time,Type,Latitude,Longitude,Synced\n")
-
-                // Data rows
                 incidents.forEach { incident ->
                     writer.write(
                         "${incident.timestamp.toFormattedDate()}," +

@@ -1,5 +1,7 @@
 package com.guardian.track.ui.dashboard
 
+// [Summary] Structured and concise implementation file.
+
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -39,33 +41,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
-// ─────────────────────────────────────────────
-//  UI State — one immutable data class
-// ─────────────────────────────────────────────
-
-/**
- * Represents everything the Dashboard UI needs to display.
- * Immutable data class — the ViewModel only emits new instances, never mutates.
- */
 data class DashboardUiState(
     val incidentCount: Int = 0,
     val lastIncidentType: String = "None"
 )
 
-// ─────────────────────────────────────────────
-//  ViewModel
-// ─────────────────────────────────────────────
-
-/**
- * DashboardViewModel — survives configuration changes (screen rotation).
- *
- * Why this is important: when the screen rotates, Android destroys and recreates
- * the Fragment. Without a ViewModel, all UI state would be lost. The ViewModel
- * lives in the ViewModelStore which survives rotation.
- *
- * StateFlow<DashboardUiState> is the single observable output — the Fragment
- * observes this and redraws whenever it changes.
- */
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val incidentRepository: IncidentRepository,
@@ -76,8 +56,6 @@ class DashboardViewModel @Inject constructor(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
-        // Collect the Room Flow in viewModelScope.
-        // viewModelScope is automatically cancelled when the ViewModel is cleared.
         viewModelScope.launch {
             incidentRepository.getAllIncidents().collect { incidents ->
                 _uiState.update { current ->
@@ -90,11 +68,7 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Called when user taps the manual alert button.
-     * Gets current GPS location then saves a MANUAL incident.
-     */
-    @Suppress("MissingPermission")
+        @Suppress("MissingPermission")
     fun triggerManualAlert() {
         viewModelScope.launch {
             try {
@@ -111,13 +85,12 @@ class DashboardViewModel @Inject constructor(
     }
 }
 
-// ─────────────────────────────────────────────
-//  Modern Compose UI
-// ─────────────────────────────────────────────
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel) {
+fun DashboardScreen(
+    viewModel: DashboardViewModel,
+    onOpenLogs: () -> Unit = {}
+) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var statusText by remember { mutableStateOf("") }
@@ -158,6 +131,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                     MissionHeader(state = state)
                     DashboardGrid(state = state)
                     GuidancePanel()
+                    OpenLogsButton(onOpenLogs = onOpenLogs)
                     AlertSection(
                         statusText = statusText,
                         onAlertClick = {
@@ -177,6 +151,27 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun OpenLogsButton(onOpenLogs: () -> Unit) {
+    Button(
+        onClick = onOpenLogs,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF2E77FF),
+            contentColor = Color.White
+        )
+    ) {
+        Text(
+            text = "OPEN INCIDENT LOGS",
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp
+        )
     }
 }
 

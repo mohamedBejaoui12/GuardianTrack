@@ -1,5 +1,7 @@
 package com.guardian.track.repository
 
+// [Summary] Structured and concise implementation file.
+
 import android.content.Context
 import android.util.Log
 import androidx.work.*
@@ -17,18 +19,6 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Repository — single source of truth for incident data.
- *
- * The Repository pattern hides the complexity of "where does data come from?"
- * from the ViewModel. The ViewModel says "give me incidents" — it doesn't
- * care whether they come from Room, Retrofit, or a cache.
- *
- * OFFLINE-FIRST strategy:
- * 1. Always save to Room first (so data is never lost).
- * 2. Try Retrofit immediately if network is available.
- * 3. If Retrofit fails, schedule WorkManager to retry when connected.
- */
 @Singleton
 class IncidentRepository @Inject constructor(
     private val incidentDao: IncidentDao,
@@ -36,12 +26,7 @@ class IncidentRepository @Inject constructor(
     private val workManager: WorkManager,
     @ApplicationContext private val context: Context
 ) {
-    /**
-     * Returns a Flow of domain models.
-     * The .map{} transforms List<Entity> → List<Incident> before the ViewModel sees it.
-     * Room emits automatically whenever the table changes.
-     */
-    fun getAllIncidents(): Flow<List<Incident>> =
+        fun getAllIncidents(): Flow<List<Incident>> =
         incidentDao.getAllIncidents().map { entities ->
             entities.map { entity ->
                 Incident(
@@ -56,11 +41,7 @@ class IncidentRepository @Inject constructor(
             }
         }
 
-    /**
-     * Saves an incident then attempts immediate sync.
-     * If sync fails → schedules WorkManager for later.
-     */
-    suspend fun saveAndSync(
+        suspend fun saveAndSync(
         type: String,
         latitude: Double,
         longitude: Double
@@ -73,8 +54,6 @@ class IncidentRepository @Inject constructor(
             isSynced = false
         )
         val id = incidentDao.insertIncident(entity)
-
-        // Attempt immediate upload
         try {
             val response = api.postIncident(
                 IncidentDto(entity.timestamp, type, latitude, longitude)
@@ -94,11 +73,7 @@ class IncidentRepository @Inject constructor(
 
     suspend fun getAllForExport() = incidentDao.getAllIncidentsOnce()
 
-    /**
-     * Schedules a WorkManager task that runs when network becomes available.
-     * setExpedited() hints that this is high-priority but not exact-time-critical.
-     */
-    private fun scheduleSyncWork() {
+        private fun scheduleSyncWork() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
@@ -110,16 +85,12 @@ class IncidentRepository @Inject constructor(
 
         workManager.enqueueUniqueWork(
             "sync_incidents",
-            ExistingWorkPolicy.KEEP,  // don't queue duplicates
+            ExistingWorkPolicy.KEEP,
             request
         )
     }
 }
 
-/**
- * Repository for emergency contacts.
- * Simple CRUD — no network sync needed for contacts.
- */
 @Singleton
 class ContactRepository @Inject constructor(
     private val contactDao: EmergencyContactDao
