@@ -24,7 +24,7 @@ class BatteryReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BATTERY_LOW) return
-        Log.i("BatteryReceiver", "Battery low — scheduling incident record")
+        Log.i("BatteryReceiver", "Battery low , scheduling incident record")
 
         // Schedule a WorkManager task that saves the BATTERY incident to Room
         val work = OneTimeWorkRequestBuilder<BatteryCriticalWorker>()

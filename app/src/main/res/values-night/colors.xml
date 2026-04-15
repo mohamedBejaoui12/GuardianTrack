@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark mode overrides -->
+    <color name="guardian_blue_500">#FF42A5F5</color>
+    <color name="guardian_blue_700">#FF1565C0</color>
+    <color name="guardian_blue_900">#FF0A2A5E</color>
+    <color name="guardian_teal_400">#FF4DB6AC</color>
+    <color name="guardian_teal_700">#FF26A69A</color>
+    <color name="status_active">#FF66BB6A</color>
+    <color name="status_inactive">#FF616161</color>
+    <color name="alert_red">#FFEF5350</color>
+    <color name="card_surface">#FF1E1E1E</color>
+    <color name="text_primary">#FFE0E0E0</color>
+    <color name="text_secondary">#FFB0B0B0</color>
+</resources>

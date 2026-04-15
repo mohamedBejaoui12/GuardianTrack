@@ -3,6 +3,8 @@ package com.guardian.track.util
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.telephony.SmsManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -28,14 +30,34 @@ object NotificationHelper {
             INCIDENT_CHANNEL_ID,
             "Incident Alerts",
             NotificationManager.IMPORTANCE_HIGH
-        )
+        ).apply {
+            description = "Urgent safety alerts from GuardianTrack"
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 300, 200, 300, 200, 300)
+            // Set default alarm sound as ringtone for high-urgency alerts
+            val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val audioAttrs = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            setSound(alarmSound, audioAttrs)
+        }
         manager.createNotificationChannel(channel)
+
+        val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
         val notification = NotificationCompat.Builder(context, INCIDENT_CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(message)
             .setSmallIcon(R.drawable.ic_shield)
             .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setSound(alarmSound)
+            .setVibrate(longArrayOf(0, 300, 200, 300, 200, 300))
+            .setOnlyAlertOnce(false)
             .build()
 
         manager.notify(notifId++, notification)

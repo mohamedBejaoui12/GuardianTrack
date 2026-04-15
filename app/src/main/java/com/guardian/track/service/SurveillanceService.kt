@@ -3,6 +3,7 @@ package com.guardian.track.service
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo         // NEW: for FOREGROUND_SERVICE_TYPE_*
 import android.hardware.*
 import android.os.*
 import android.util.Log
@@ -16,6 +17,7 @@ import com.guardian.track.util.NotificationHelper
 import com.guardian.track.util.SmsHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -34,8 +36,12 @@ import kotlin.math.sqrt
  *
  * Sensor callbacks fire on a HandlerThread (background thread) to avoid
  * blocking the main thread. We then switch to the main dispatcher for UI updates.
+ *
+ * foregroundServiceType must be declared explicitly on Android 14+ (API 34+):
+ *   - FOREGROUND_SERVICE_TYPE_LOCATION : access GPS in background
+ *   - FOREGROUND_SERVICE_TYPE_HEALTH   : use high-rate sensors (accelerometer)
  */
-@AndroidEntryPoint  // Required for Hilt to inject into a Service
+@AndroidEntryPoint
 class SurveillanceService : Service() {
 
     @Inject lateinit var incidentRepository: IncidentRepository
@@ -48,21 +54,22 @@ class SurveillanceService : Service() {
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
 
-    // HandlerThread: dedicated background thread for sensor callbacks
     private lateinit var sensorThread: HandlerThread
     private lateinit var sensorHandler: Handler
 
-    // Fall detection state machine
     private var freeFallStartTime: Long = 0L
     private var inFreeFall = false
-    private var fallThreshold = 15.0f  // m/s², updated from DataStore
+    private var lastDetectionAt: Long = 0L
+    @Volatile
+    private var fallThreshold = 15.0f
 
     companion object {
         const val CHANNEL_ID = "guardian_surveillance"
         const val NOTIFICATION_ID = 1
-        const val FREEFALL_MAGNITUDE = 3.0f      // m/s² — below this = free fall
-        const val FREEFALL_DURATION_MS = 100L    // must stay in free fall this long
-        const val IMPACT_WINDOW_MS = 200L        // impact must follow within this window
+        const val FREEFALL_MAGNITUDE = 3.0f
+        const val FREEFALL_DURATION_MS = 100L
+        const val IMPACT_WINDOW_MS = 200L
+        const val DETECTION_COOLDOWN_MS = 2500L
         private const val TAG = "SurveillanceService"
 
         fun startService(context: Context) {
@@ -78,11 +85,27 @@ class SurveillanceService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification())
 
-        // Read threshold from DataStore once on start
+        // On Android 14+ (API 34) we MUST pass the foreground service type(s)
+        // explicitly. Using the 3-arg overload prevents the SecurityException
+        // that targetSdk 36 throws when the type is inferred incorrectly.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                buildNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, buildNotification())
+        }
+
         serviceScope.launch {
-            fallThreshold = preferencesManager.fallThreshold.first()
+            // Keep threshold in sync while service is alive so Settings changes apply immediately.
+            preferencesManager.fallThreshold.collectLatest { latestThreshold ->
+                fallThreshold = latestThreshold
+                Log.d(TAG, "Updated fall threshold=$fallThreshold")
+            }
         }
 
         setupAccelerometer()
@@ -90,7 +113,7 @@ class SurveillanceService : Service() {
 
     /**
      * Sets up a dedicated HandlerThread for sensor events.
-     * This prevents sensor callbacks from competing with the UI thread.
+     * Prevents sensor callbacks from competing with the UI thread.
      */
     private fun setupAccelerometer() {
         sensorThread = HandlerThread("SensorThread").apply { start() }
@@ -103,15 +126,14 @@ class SurveillanceService : Service() {
             sensorManager.registerListener(
                 sensorEventListener,
                 it,
-                SensorManager.SENSOR_DELAY_GAME,  // ~20ms polling — enough for fall detection
-                sensorHandler                      // deliver events on sensorThread
+                SensorManager.SENSOR_DELAY_GAME,
+                sensorHandler
             )
         } ?: Log.w(TAG, "No accelerometer found on device")
     }
 
     /**
-     * SensorEventListener implementation.
-     * This runs on sensorThread (HandlerThread), NOT the main thread.
+     * SensorEventListener — runs on sensorThread, NOT the main thread.
      */
     private val sensorEventListener = object : SensorEventListener {
 
@@ -120,38 +142,55 @@ class SurveillanceService : Service() {
             val ay = event.values[1]
             val az = event.values[2]
 
-            // Magnitude = vector length of (ax, ay, az)
             val magnitude = sqrt(ax * ax + ay * ay + az * az)
             val now = System.currentTimeMillis()
 
             when {
-                // Phase 1: detect free fall
                 magnitude < FREEFALL_MAGNITUDE && !inFreeFall -> {
                     inFreeFall = true
                     freeFallStartTime = now
                 }
-
-                // Still in free fall — check duration
                 magnitude < FREEFALL_MAGNITUDE && inFreeFall -> {
-                    // nothing extra needed — timing tracked by freeFallStartTime
-                }
-
-                // Phase 2: detect impact after sufficient free-fall duration
-                magnitude > fallThreshold && inFreeFall -> {
-                    val freeFallDuration = now - freeFallStartTime
-                    if (freeFallDuration >= FREEFALL_DURATION_MS &&
-                        freeFallDuration <= (FREEFALL_DURATION_MS + IMPACT_WINDOW_MS)) {
-                        // FALL CONFIRMED
-                        inFreeFall = false
-                        onFallDetected()
-                    } else {
+                    // If this low-g phase lasts too long, reset and wait for a fresh sequence.
+                    if (now - freeFallStartTime > (FREEFALL_DURATION_MS + IMPACT_WINDOW_MS)) {
                         inFreeFall = false
                     }
                 }
 
-                // Exit free fall without impact (false alarm)
-                magnitude > FREEFALL_MAGNITUDE && inFreeFall -> {
-                    inFreeFall = false
+                inFreeFall -> {
+                    val freeFallDuration = now - freeFallStartTime
+
+                    when {
+                        // Expected sequence: sustained free-fall, then impact over threshold.
+                        magnitude > fallThreshold &&
+                            freeFallDuration >= FREEFALL_DURATION_MS &&
+                            freeFallDuration <= (FREEFALL_DURATION_MS + IMPACT_WINDOW_MS) -> {
+                            inFreeFall = false
+                            if (now - lastDetectionAt >= DETECTION_COOLDOWN_MS) {
+                                lastDetectionAt = now
+                                onFallDetected()
+                            }
+                        }
+
+                        // Free-fall was too brief; likely movement noise.
+                        magnitude > FREEFALL_MAGNITUDE && freeFallDuration < FREEFALL_DURATION_MS -> {
+                            inFreeFall = false
+                        }
+
+                        // Impact window expired without strong hit.
+                        freeFallDuration > (FREEFALL_DURATION_MS + IMPACT_WINDOW_MS) -> {
+                            inFreeFall = false
+                        }
+
+                        // Keep waiting briefly for a possible impact.
+                        else -> Unit
+                    }
+                }
+
+                else -> {
+                    if (inFreeFall) {
+                        inFreeFall = false
+                    }
                 }
             }
         }
@@ -161,52 +200,44 @@ class SurveillanceService : Service() {
 
     /**
      * Called when a fall is confirmed.
-     * Switches to IO dispatcher to do network/DB work off the sensor thread.
+     * Switches to IO dispatcher for network/DB work.
      */
     private fun onFallDetected() {
         Log.i(TAG, "FALL DETECTED")
         serviceScope.launch(Dispatchers.IO) {
-            // Get last known location (best-effort)
             val (lat, lon) = getLastLocation()
-
-            // Save to Room + attempt sync
             incidentRepository.saveAndSync("FALL", lat, lon)
 
-            // Send SMS alert (simulated or real based on settings)
             val phone = preferencesManager.emergencyNumber.first()
             val simMode = preferencesManager.smsSimulationMode.first()
             smsHelper.sendAlert(phone, "FALL", simMode, this@SurveillanceService)
 
-            // Show a local notification
             NotificationHelper.showIncidentNotification(
                 this@SurveillanceService,
-                "Fall Detected",
-                "A fall was detected and an alert has been sent."
+                "Emergancey Detected",
+                "The Guardin detect an Emergency, We've sent an alert."
             )
         }
     }
 
     /**
      * Gets last known GPS location.
-     * If permission was denied, returns 0.0 / 0.0 (sentinel values — spec §4.1).
+     * Returns 0.0 / 0.0 if permission denied or location unavailable.
      */
     @Suppress("MissingPermission")
     private suspend fun getLastLocation(): Pair<Double, Double> =
         try {
-            val task = fusedLocation.lastLocation
-            // kotlinx-coroutines-play-services adds await() to Task<T>
-            val loc = task.await()
+            val loc = fusedLocation.lastLocation.await()
             Pair(loc?.latitude ?: 0.0, loc?.longitude ?: 0.0)
         } catch (e: Exception) {
             Pair(0.0, 0.0)
         }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // START_STICKY: if killed by OS, restart service automatically
         return START_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null  // not a bound service
+    override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
         super.onDestroy()
@@ -221,9 +252,9 @@ class SurveillanceService : Service() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             "Surveillance",
-            NotificationManager.IMPORTANCE_LOW  // LOW = no sound, just persistent icon
+            NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "GuardianTrack active monitoring"
+            description = "Guardian Track Watch "
         }
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
@@ -235,11 +266,11 @@ class SurveillanceService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("GuardianTrack Active")
+            .setContentTitle("Guardian Track In Watch")
             .setContentText("Monitoring for falls and alerts")
             .setSmallIcon(R.drawable.ic_shield)
             .setContentIntent(openAppIntent)
-            .setOngoing(true)   // user cannot swipe away
+            .setOngoing(true)
             .build()
     }
 }

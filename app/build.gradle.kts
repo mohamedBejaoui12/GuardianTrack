@@ -29,12 +29,11 @@ android {
         buildConfigField(
             "String",
             "API_BASE_URL",
-            "\"${localProps.getProperty("api.base.url", "https://your-mock-api.mockapi.io/api/v1/")}\""
+            "\"${localProps.getProperty("api.base.url", "https://69c7b5ac63393440b317079d.mockapi.io/")}\""
         )
     }
 
     buildFeatures {
-        viewBinding = true
         buildConfig = true
         compose = true
     }
@@ -80,10 +79,6 @@ dependencies {
 
 
 
-    // Navigation
-    implementation(libs.navigation.fragment)
-    implementation(libs.navigation.ui)
-
     // Room — KSP generates the DAO implementations
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
@@ -101,9 +96,6 @@ dependencies {
 
     // Coroutines
     implementation(libs.coroutines.android)
-
-
-    implementation(libs.recyclerview)
 
     // DataStore
     implementation(libs.datastore)
