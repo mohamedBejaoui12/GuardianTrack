@@ -13,12 +13,12 @@ import java.io.IOException
  * Exports incident history to a CSV file in the public Documents folder.
  *
  * Uses MediaStore (Scoped Storage API) — required on Android 10+.
- * We don't need WRITE_EXTERNAL_STORAGE permission with MediaStore on API 29+.
+ * The file can be found in: Documents/emergency_detector_incidents_<timestamp>.csv
  *
  * The file can be found in: Documents/guardian_incidents_<timestamp>.csv
  */
 object CsvExporter {
-
+        val fileName = "emergency_detector_incidents_${System.currentTimeMillis()}.csv"
     fun export(context: Context, incidents: List<IncidentEntity>): Boolean {
         val fileName = "guardian_incidents_${System.currentTimeMillis()}.csv"
 

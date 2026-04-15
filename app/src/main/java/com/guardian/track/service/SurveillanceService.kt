@@ -64,7 +64,7 @@ class SurveillanceService : Service() {
     private var fallThreshold = 15.0f
 
     companion object {
-        const val CHANNEL_ID = "guardian_surveillance"
+        const val CHANNEL_ID = "emergency_detector_surveillance"
         const val NOTIFICATION_ID = 1
         const val FREEFALL_MAGNITUDE = 3.0f
         const val FREEFALL_DURATION_MS = 100L
@@ -214,8 +214,8 @@ class SurveillanceService : Service() {
 
             NotificationHelper.showIncidentNotification(
                 this@SurveillanceService,
-                "Emergancey Detected",
-                "The Guardin detect an Emergency, We've sent an alert."
+                "Emergency Detected",
+                "Emergency Detector identified a possible fall and sent an alert."
             )
         }
     }
@@ -251,10 +251,10 @@ class SurveillanceService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Surveillance",
+            "Emergency Surveillance",
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Guardian Track Watch "
+            description = "Background emergency detection service"
         }
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
@@ -266,8 +266,8 @@ class SurveillanceService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Guardian Track In Watch")
-            .setContentText("Monitoring for falls and alerts")
+            .setContentTitle("Emergency Detector Active")
+            .setContentText("Detecting falls and preparing emergency alerts")
             .setSmallIcon(R.drawable.ic_shield)
             .setContentIntent(openAppIntent)
             .setOngoing(true)

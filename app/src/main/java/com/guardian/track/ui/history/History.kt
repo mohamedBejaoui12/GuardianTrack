@@ -18,17 +18,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
@@ -46,7 +44,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -133,9 +130,13 @@ fun HistoryScreen(viewModel: HistoryViewModel) {
                 if (incidents.isEmpty()) {
                     EmptyHistoryCard()
                 } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 170.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         items(incidents, key = { it.id }) { incident ->
-                            DismissibleIncidentCard(
+                            IncidentGridCard(
                                 incident = incident,
                                 onDelete = { viewModel.deleteIncident(incident.id) }
                             )
@@ -254,83 +255,25 @@ private fun EmptyHistoryCard() {
 }
 
 @Composable
-private fun DismissibleIncidentCard(incident: Incident, onDelete: () -> Unit) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        positionalThreshold = { totalDistance -> totalDistance * 0.5f },
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDelete()
-            }
-            value == SwipeToDismissBoxValue.EndToStart
-        }
-    )
-
-    val dismissing by androidx.compose.runtime.remember {
-        androidx.compose.runtime.derivedStateOf {
-            dismissState.targetValue == SwipeToDismissBoxValue.EndToStart ||
-                dismissState.currentValue == SwipeToDismissBoxValue.EndToStart
-        }
-    }
-    val backgroundColor by animateColorAsState(
-        targetValue = if (dismissing) Color(0xFFE5486A) else Color(0xFFEFF3FF),
-        label = "historySwipeBackground"
-    )
-
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        enableDismissFromEndToStart = true,
-        gesturesEnabled = true,
-        content = {
-            IncidentCardContent(incident)
-        },
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(backgroundColor),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Row(
-                    modifier = Modifier.padding(end = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = android.R.drawable.ic_menu_delete),
-                        contentDescription = "Delete incident",
-                        tint = if (dismissing) Color.White else Color(0xFFD32F2F)
-                    )
-                    Text(
-                        "Delete",
-                        color = if (dismissing) Color.White else Color(0xFFD32F2F),
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        }
-    )
-}
-
-@Composable
-private fun IncidentCardContent(incident: Incident) {
+private fun IncidentGridCard(incident: Incident, onDelete: () -> Unit) {
     val statusColor = if (incident.isSynced) Color(0xFF0FAF97) else Color(0xFFE79A21)
     Card(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .border(1.dp, Color(0xFFE9ECF6), RoundedCornerShape(18.dp)),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.Start
         ) {
             Text(
                 text = "${incident.formattedDate} ${incident.formattedTime}",
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -354,7 +297,8 @@ private fun IncidentCardContent(incident: Incident) {
                 } else {
                     "%.4f, %.4f".format(incident.latitude, incident.longitude)
                 },
-                color = Color(0xFF5E6573)
+                color = Color(0xFF5E6573),
+                fontSize = 12.sp
             )
 
             Row(
@@ -362,11 +306,9 @@ private fun IncidentCardContent(incident: Incident) {
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "Swipe left to delete",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF808897)
-                )
+                TextButton(onClick = onDelete) {
+                    Text("Delete", color = Color(0xFFD03B5A), fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }

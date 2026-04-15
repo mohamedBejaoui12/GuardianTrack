@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.*
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -50,7 +49,6 @@ import javax.inject.Inject
  */
 data class DashboardUiState(
     val incidentCount: Int = 0,
-    val serviceRunning: Boolean = true,
     val lastIncidentType: String = "None"
 )
 
@@ -157,8 +155,9 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    HeroHeader(state = state)
-                    InsightStrip(state = state)
+                    MissionHeader(state = state)
+                    DashboardGrid(state = state)
+                    GuidancePanel()
                     AlertSection(
                         statusText = statusText,
                         onAlertClick = {
@@ -213,7 +212,7 @@ private fun DecorativeBackground() {
 }
 
 @Composable
-private fun HeroHeader(state: DashboardUiState) {
+private fun MissionHeader(state: DashboardUiState) {
     Card(
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
@@ -231,97 +230,93 @@ private fun HeroHeader(state: DashboardUiState) {
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "Guardian Track",
+                    text = "Emergency Detector",
                     color = Color.White,
-                    fontSize = 30.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
                     text = if (state.incidentCount == 0) {
-                        "All clear. You are protected and being monitored in real time."
+                        "No emergency incidents detected. Your protection profile is ready."
                     } else {
-                        "Stay calm. Monitoring remains active with ${state.incidentCount} logged events."
+                        "${state.incidentCount} incident records available for quick review and response."
                     },
                     color = Color.White.copy(alpha = 0.92f),
                     fontSize = 14.sp,
                     lineHeight = 20.sp
                 )
-                LiveStatusPill(isRunning = state.serviceRunning)
+                Text(
+                    text = "Tap alert anytime to notify your emergency contact instantly.",
+                    color = Color.White.copy(alpha = 0.88f),
+                    fontSize = 12.sp
+                )
             }
         }
     }
 }
 
 @Composable
-private fun LiveStatusPill(isRunning: Boolean) {
-    val transition = rememberInfiniteTransition(label = "statusPulse")
-    val pulseScale by transition.animateFloat(
-        initialValue = 0.9f,
-        targetValue = 1.25f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "statusScale"
-    )
-
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(
-                color = if (isRunning) Color(0x33B9FF9E) else Color(0x33FF9E9E)
+private fun DashboardGrid(state: DashboardUiState) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            InsightCard(
+                title = "Total Incidents",
+                value = state.incidentCount.toString(),
+                subtitle = "Complete record count",
+                color = Color(0xFF2A77FF),
+                modifier = Modifier.weight(1f)
             )
-            .border(
-                BorderStroke(
-                    width = 1.dp,
-                    color = if (isRunning) Color(0xFFB9FF9E) else Color(0xFFFF9E9E)
-                ),
-                shape = RoundedCornerShape(999.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .scale(pulseScale)
-                    .clip(CircleShape)
-                    .background(if (isRunning) Color(0xFF7DFF4A) else Color(0xFFFF6666))
-            )
-            Text(
-                text = if (isRunning) "Live monitoring ON" else "Monitoring paused",
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 13.sp
+            InsightCard(
+                title = "Last Incident",
+                value = state.lastIncidentType,
+                subtitle = "Latest event type",
+                color = when (state.lastIncidentType) {
+                    "MANUAL" -> Color(0xFFE5486A)
+                    "AUTO" -> Color(0xFF0FAF97)
+                    else -> Color(0xFF7A7A7A)
+                },
+                modifier = Modifier.weight(1f)
             )
         }
+
+        InsightCard(
+            title = "Response Plan",
+            value = "Ready",
+            subtitle = "Emergency contact and sensitivity are configurable in Preferences.",
+            color = Color(0xFF6A59FF),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
 @Composable
-private fun InsightStrip(state: DashboardUiState) {
-    Row(
+private fun GuidancePanel() {
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF0E8)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        InsightCard(
-            title = "Incidents",
-            value = state.incidentCount.toString(),
-            subtitle = if (state.incidentCount == 0) "No recent alerts" else "Review incident history",
-            color = Color(0xFF2A77FF),
-            modifier = Modifier.weight(1f)
-        )
-        InsightCard(
-            title = "Last Type",
-            value = state.lastIncidentType,
-            subtitle = "Most recent trigger",
-            color = when (state.lastIncidentType) {
-                "MANUAL" -> Color(0xFFE5486A)
-                "AUTO" -> Color(0xFF0FAF97)
-                else -> Color(0xFF7A7A7A)
-            },
-            modifier = Modifier.weight(1f)
-        )
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "Quick Guidance",
+                color = Color(0xFF7D3F1F),
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+            Text(
+                text = "Use Incident Logs for past alerts and Preferences to update emergency number and fall sensitivity.",
+                color = Color(0xFF85543A),
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
+        }
     }
 }
 

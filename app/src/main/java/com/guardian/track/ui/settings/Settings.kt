@@ -171,6 +171,56 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
+                            "Emergency Number",
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "This number is encrypted and used when alerts are sent.",
+                            color = Color(0xFF636B79),
+                            fontSize = 13.sp
+                        )
+                        TextField(
+                            value = phoneUi,
+                            onValueChange = { input ->
+                                phoneUi = input.filter { it.isDigit() }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF5F8FF),
+                                unfocusedContainerColor = Color(0xFFF5F8FF),
+                                disabledContainerColor = Color(0xFFF5F8FF),
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                disabledIndicatorColor = Color.Transparent
+                            )
+                        )
+                        Button(
+                            onClick = { viewModel.setEmergencyNumber(phoneUi) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF2E77FF),
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Save Number", fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
                             "Fall Detection Sensitivity",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
@@ -250,53 +300,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                     uncheckedTrackColor = Color(0xFFD5DBE8)
                                 )
                             )
-                        }
-                    }
-                }
-
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text("Emergency Number", fontWeight = FontWeight.Bold)
-                        Text(
-                            "This number is encrypted and used when alerts are sent.",
-                            color = Color(0xFF636B79),
-                            fontSize = 13.sp
-                        )
-                        TextField(
-                            value = phoneUi,
-                            onValueChange = { input ->
-                                phoneUi = input.filter { it.isDigit() }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFF5F8FF),
-                                unfocusedContainerColor = Color(0xFFF5F8FF),
-                                disabledContainerColor = Color(0xFFF5F8FF),
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent
-                            )
-                        )
-                        Button(
-                            onClick = { viewModel.setEmergencyNumber(phoneUi) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2E77FF),
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Save Number", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

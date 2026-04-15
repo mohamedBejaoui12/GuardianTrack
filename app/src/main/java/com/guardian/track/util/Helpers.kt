@@ -19,7 +19,7 @@ import javax.inject.Singleton
  */
 object NotificationHelper {
 
-    private const val INCIDENT_CHANNEL_ID = "guardian_incidents"
+    private const val INCIDENT_CHANNEL_ID = "emergency_detector_incidents"
     private var notifId = 100
 
     fun showIncidentNotification(context: Context, title: String, message: String) {
@@ -31,7 +31,7 @@ object NotificationHelper {
             "Incident Alerts",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "Urgent safety alerts from GuardianTrack"
+            description = "Urgent safety alerts from Emergency Detector"
             enableVibration(true)
             vibrationPattern = longArrayOf(0, 300, 200, 300, 200, 300)
             // Set default alarm sound as ringtone for high-urgency alerts
@@ -122,6 +122,6 @@ class SmsHelper @Inject constructor() {
     private fun buildMessage(incidentType: String): String {
         val timeStr = java.text.SimpleDateFormat("HH:mm dd/MM", java.util.Locale.getDefault())
             .format(java.util.Date())
-        return "GuardianTrack ALERT: $incidentType incident at $timeStr. Please check on me."
+        return "Emergency Detector ALERT: $incidentType incident at $timeStr. Please check on me."
     }
 }
