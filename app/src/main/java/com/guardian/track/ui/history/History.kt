@@ -66,8 +66,14 @@ class HistoryViewModel @Inject constructor(
     private val incidentRepository: IncidentRepository
 ) : ViewModel() {
 
-        val incidents = incidentRepository.getAllIncidents()
+    val incidents = incidentRepository.getAllIncidents()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    init {
+        viewModelScope.launch {
+            incidentRepository.refreshIncidentsFromRemote()
+        }
+    }
 
     fun deleteIncident(id: Long) {
         viewModelScope.launch { incidentRepository.deleteIncident(id) }

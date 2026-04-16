@@ -52,6 +52,29 @@ class IncidentRepository @Inject constructor(
         }
     }
 
+    suspend fun refreshIncidentsFromRemote() {
+        val remoteIncidents = getRemoteIncidents()
+        remoteIncidents.forEach { remote ->
+            val alreadyExists = incidentDao.countBySignature(
+                timestamp = remote.timestamp,
+                type = remote.type,
+                latitude = remote.latitude,
+                longitude = remote.longitude
+            ) > 0
+            if (!alreadyExists) {
+                incidentDao.insertIncident(
+                    IncidentEntity(
+                        timestamp = remote.timestamp,
+                        type = remote.type,
+                        latitude = remote.latitude,
+                        longitude = remote.longitude,
+                        isSynced = true
+                    )
+                )
+            }
+        }
+    }
+
     suspend fun saveAndSync(
         type: String,
         latitude: Double,

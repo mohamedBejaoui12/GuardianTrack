@@ -57,6 +57,7 @@ class DashboardViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            incidentRepository.refreshIncidentsFromRemote()
             incidentRepository.getAllIncidents().collect { incidents ->
                 _uiState.update { current ->
                     current.copy(

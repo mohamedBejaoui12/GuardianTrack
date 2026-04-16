@@ -28,6 +28,16 @@ interface IncidentDao {
 
     @Query("DELETE FROM incidents WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query(
+        "SELECT COUNT(*) FROM incidents WHERE timestamp = :timestamp AND type = :type AND latitude = :latitude AND longitude = :longitude"
+    )
+    suspend fun countBySignature(
+        timestamp: Long,
+        type: String,
+        latitude: Double,
+        longitude: Double
+    ): Int
 }
 
 @Dao
