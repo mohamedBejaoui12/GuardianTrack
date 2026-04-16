@@ -122,8 +122,15 @@ Add this to your `local.properties`:
 api.base.url=https://your-mock-api.mockapi.io/api/v1/
 ```
 
-Expected endpoint used by the app:
+Expected MockAPI resources used by the app:
+- `GET /incidents`
 - `POST /incidents`
+- `DELETE /incidents/{id}`
+- `GET /emergency_contacts`
+- `POST /emergency_contacts`
+- `DELETE /emergency_contacts/{id}`
+
+The app keeps data locally in Room first, then mirrors incidents and contacts to MockAPI when network calls succeed.
 
 ## How To Run
 

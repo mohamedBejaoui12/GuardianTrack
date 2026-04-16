@@ -3,12 +3,13 @@ package com.guardian.track.worker
 // [Summary] Structured and concise implementation file.
 
 import android.content.Context
+import android.provider.Settings
 import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.guardian.track.data.local.PreferencesManager
 import com.guardian.track.data.remote.api.GuardianApi
-import com.guardian.track.data.remote.dto.IncidentDto
+import com.guardian.track.data.remote.dto.IncidentRemoteDto
 import com.guardian.track.data.local.dao.IncidentDao
 import com.guardian.track.data.local.entity.IncidentEntity
 import com.guardian.track.repository.IncidentRepository
@@ -33,7 +34,16 @@ class SyncWorker @AssistedInject constructor(
             var allSuccess = true
             for (incident in unsynced) {
                 val response = api.postIncident(
-                    IncidentDto(incident.timestamp, incident.type, incident.latitude, incident.longitude)
+                    IncidentRemoteDto(
+                        timestamp = incident.timestamp,
+                        type = incident.type,
+                        latitude = incident.latitude,
+                        longitude = incident.longitude,
+                        deviceId = Settings.Secure.getString(
+                            applicationContext.contentResolver,
+                            Settings.Secure.ANDROID_ID
+                        ).orEmpty()
+                    )
                 )
                 if (response.isSuccessful) {
                     incidentDao.markAsSynced(incident.id)
