@@ -56,6 +56,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.constraintlayout)
 
+    testImplementation("junit:junit:4.13.2")
+
 
     implementation("androidx.activity:activity-compose:1.9.0")
 

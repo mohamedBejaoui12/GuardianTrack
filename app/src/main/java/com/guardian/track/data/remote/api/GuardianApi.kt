@@ -1,6 +1,5 @@
 package com.guardian.track.data.remote.api
 
-// [Summary] Structured and concise implementation file.
 
 import com.guardian.track.data.remote.dto.EmergencyContactRemoteDto
 import com.guardian.track.data.remote.dto.IncidentRemoteDto

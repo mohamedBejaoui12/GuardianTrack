@@ -58,6 +58,12 @@ object NotificationHelper {
     }
 }
 
+fun buildSmsAlertMessage(incidentType: String, timestampMillis: Long = System.currentTimeMillis()): String {
+    val timeStr = java.text.SimpleDateFormat("HH:mm dd/MM", java.util.Locale.getDefault())
+        .format(java.util.Date(timestampMillis))
+    return "Emergency Detector ALERT: $incidentType incident at $timeStr. Please check on me."
+}
+
 @Singleton
 class SmsHelper @Inject constructor() {
 
@@ -72,7 +78,7 @@ class SmsHelper @Inject constructor() {
         simulationMode: Boolean,
         context: Context
     ) {
-        val message = buildMessage(incidentType)
+        val message = buildSmsAlertMessage(incidentType)
 
         if (simulationMode) {
             Log.i(TAG, "📱 [SIMULATION] SMS to $phoneNumber: $message")
@@ -99,9 +105,4 @@ class SmsHelper @Inject constructor() {
         }
     }
 
-    private fun buildMessage(incidentType: String): String {
-        val timeStr = java.text.SimpleDateFormat("HH:mm dd/MM", java.util.Locale.getDefault())
-            .format(java.util.Date())
-        return "Emergency Detector ALERT: $incidentType incident at $timeStr. Please check on me."
-    }
 }
